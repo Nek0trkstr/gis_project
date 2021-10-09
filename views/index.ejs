@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Create a time slider</title>
+<title>GIS Earthquakes</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
 <style>
 body { margin: 0; padding: 0; }
 #map { position: absolute; top: 0; bottom: 0; width: 100%; }
@@ -61,6 +61,7 @@ body { margin: 0; padding: 0; }
         <input id="slider" type="range" min="0" max="11" step="1" value="0">
         <label for="yearPicker">Select year</label>
         <select id="yearPicker" name="year">
+            <option value="2018">2018</option>
             <option value="2019">2019</option>
             <option value="2020">2020</option>
             <option value="2021">2021</option>
@@ -75,14 +76,15 @@ body { margin: 0; padding: 0; }
 
 <script async>
     state = {
-        year: 2019,
-        month: 0,
+        year: 2018,
+        month: 1,
     }
 
     var yearPicker = document.getElementById('yearPicker');
-    var yearText = document.getElementById('yearText').innerHTML = state.year;
+    var yearText = document.getElementById('yearText');
+    yearText.innerHTML = state.year;
 
-	mapboxgl.accessToken = 'pk.eyJ1Ijoic3BvdHlwb3AiLCJhIjoiY2tyaHE2Ym1pMGZpeTJwbzVqdzNkM3p2dyJ9.CsBryXgc-KFjnxvOfx8rUQ';
+	mapboxgl.accessToken = 'pk.eyJ1Ijoic3BvdHlwb3AiLCJhIjoiY2t1NGJ2aWVpMmNyYzJ1cWhnZGJiNTZlMiJ9.a8RvX6RSf20ddTCPnKJWLw';
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v10',
@@ -107,9 +109,7 @@ body { margin: 0; padding: 0; }
 
 
     map.on('load', async function () {
-        let year = state.year;
-        let data = await fetchData(year);
-        data = augmentData(data);
+        let data = await fetchData();
 
         map.addSource('earthquakes', {
             'type': 'geojson',
@@ -164,48 +164,31 @@ body { margin: 0; padding: 0; }
             }
         });
 
-        // Set filter to first month of the year
-        // 0 = January
-        filterBy(0);
-
         document.getElementById('slider').addEventListener('input', function (e) {
-                var month = parseInt(e.target.value, 10);
-                filterBy(month);
+                var month = parseInt(e.target.value, 10) + 1;
+                state.month = month;
+                updateEarthQuakes();
             });
 
         document.getElementById('menu').addEventListener('input', async (e) => {
             year = parseInt(yearPicker.value, 10);
             state.year = year;
-            let data = await fetchData(year);
-            data = augmentData(data);
-            map.getSource("earthquakes").setData(data);
+            updateEarthQuakes();
         })
     });
 
-    function filterBy(month, year) {
-        var filters = ['==', 'month', month];
-        map.setFilter('earthquake-circles', filters);
-        map.setFilter('earthquake-labels', filters);
-
-        // Set the label to the month
-        document.getElementById('month').textContent = months[month];
-    }
-
-    async function fetchData(year) {
-        let response = await fetch(`http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${year}-01-01&endtime=${year}-12-31&minmagnitude=4&limit=20000`)
+    async function fetchData() {
+        let response = await fetch(`api/earthquake?year=${state.year}&month=${state.month}`)
         let data = await response.json();
         return data;
     }
 
-    function augmentData(data) {
-        // Create a month property value based on time
-        // used to filter against.
-        data.features = data.features.map(function (d) {
-            d.properties.month = new Date(d.properties.time).getMonth();
-            return d;
-        });
-        return data;
+    async function updateEarthQuakes() {
+        yearText = state.year;
+        earthquakes = await fetchData();
+        map.getSource("earthquakes").setData(earthquakes);
     }
+
 </script>
 
 </body>
