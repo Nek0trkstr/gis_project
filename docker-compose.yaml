@@ -1,0 +1,25 @@
+mongodb:
+  image: mongo
+  ports:
+    - "27017:27017"
+
+mongo-seed:
+  image: mongo
+  volumes:
+    - ./allFeatures.json:/allFeatures.json
+  links:
+    - mongodb
+  command: mongoimport --host mongodb --db gis --collection features --type json --file /allFeatures.json --jsonArray
+
+# my webserver which uses mongo (not shown in example)
+webserver:
+  build: .
+  ports:
+    - "3000:3000"
+  volumes:
+    - .:/app
+  links:
+    - mongodb
+  mem_limit: 4096m
+  environment:
+  - NODE_OPTIONS="--max-old-space-size=8192"
