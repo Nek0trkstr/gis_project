@@ -79,11 +79,13 @@ body { margin: 0; padding: 0; }
         year: 2018,
         month: 1,
     }
-
+    // Get elements for further use
     var yearPicker = document.getElementById('yearPicker');
     var yearText = document.getElementById('yearText');
+    var monthSlider = document.getElementById('slider');
     yearText.innerHTML = state.year;
 
+    // Initialize Mapbox
 	mapboxgl.accessToken = 'pk.eyJ1Ijoic3BvdHlwb3AiLCJhIjoiY2t1NGJ2aWVpMmNyYzJ1cWhnZGJiNTZlMiJ9.a8RvX6RSf20ddTCPnKJWLw';
     var map = new mapboxgl.Map({
         container: 'map',
@@ -91,31 +93,51 @@ body { margin: 0; padding: 0; }
         center: [50.4606, 20.7927],
         zoom: 3
     });
+    map.on('load', configMapBox)
+    // Add a callback function to handle input on slider
+    monthSlider.addEventListener('input', handleSliderInput)
+    // Add a callback function to handle input on years dropdown menu
+    yearPicker.addEventListener('input', handleYearDropDownInput)
 
-    var months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
-    ];
+    // Handles slider inputs
+    async function handleSliderInput(e) {
+        var month = parseInt(e.target.value, 10) + 1;
+        state.month = month;
+        updateEarthQuakes();
+    }
 
+    // Handles years picker input
+    async function handleYearDropDownInput(e) {
+        year = parseInt(yearPicker.value, 10);
+        state.year = year;
+        updateEarthQuakes();
+    }
 
-    map.on('load', async function () {
+    // Makes ajax request to API to get earthquake data
+    async function fetchData() {
+        let response = await fetch(`api/earthquake?year=${state.year}&month=${state.month}`)
+        let data = await response.json();
+        return data;
+    }
+
+    // Initialize rerender of earthquakes
+    async function updateEarthQuakes() {
+        yearText = state.year;
+        earthquakes = await fetchData();
+        map.getSource("earthquakes").setData(earthquakes);
+    }
+
+    // Config MapBox library
+    async function configMapBox() {
         let data = await fetchData();
 
+        // Adds Data Source to read from
         map.addSource('earthquakes', {
             'type': 'geojson',
             data: data
         });
 
+        // Renders circles from datasource
         map.addLayer({
             'id': 'earthquake-circles',
             'type': 'circle',
@@ -143,6 +165,7 @@ body { margin: 0; padding: 0; }
             }
         });
 
+        // Renders the power of earthquake on the circle
         map.addLayer({
             'id': 'earthquake-labels',
             'type': 'symbol',
@@ -163,33 +186,7 @@ body { margin: 0; padding: 0; }
                 'text-color': 'rgba(0,0,0,0.5)'
             }
         });
-
-        document.getElementById('slider').addEventListener('input', function (e) {
-                var month = parseInt(e.target.value, 10) + 1;
-                state.month = month;
-                updateEarthQuakes();
-            });
-
-        document.getElementById('menu').addEventListener('input', async (e) => {
-            year = parseInt(yearPicker.value, 10);
-            state.year = year;
-            updateEarthQuakes();
-        })
-    });
-
-    async function fetchData() {
-        let response = await fetch(`api/earthquake?year=${state.year}&month=${state.month}`)
-        let data = await response.json();
-        return data;
     }
-
-    async function updateEarthQuakes() {
-        yearText = state.year;
-        earthquakes = await fetchData();
-        map.getSource("earthquakes").setData(earthquakes);
-    }
-
 </script>
-
 </body>
 </html>
