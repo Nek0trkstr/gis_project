@@ -50,40 +50,116 @@ body { margin: 0; padding: 0; }
         margin: 0;
         cursor: ew-resize;
     }
+
+    /* The switch - the box around the slider */
+    .switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 17px;
+    }
+
+    /* Hide default HTML checkbox */
+    .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    }
+
+    /* The slider */
+    .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    }
+
+    .slider:before {
+    position: absolute;
+    content: "";
+    height: 13px;
+    width: 13px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    }
+
+    input:checked + .slider {
+    background-color: #2196F3;
+    }
+
+    input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+    }
+
+    input:checked + .slider:before {
+    -webkit-transform: translateX(13    px);
+    -ms-transform: translateX(13px);
+    transform: translateX(13px);
+    }
+
+    /* Rounded sliders */
+    .slider.round {
+    border-radius: 34px;
+    }
+
+    .slider.round:before {
+    border-radius: 50%;
+    }
 </style>
 
 <div id="map"></div>
 
 <div class="map-overlay top">
     <div class="map-overlay-inner" id="menu">
-        <h2>Significant earthquakes in <span id=yearText></span></h2>
+        <h2>Significant earthquakes in <span id=monthText></span>/<span id=yearText></span></h2>
         <label id="month"></label>
         <input id="slider" type="range" min="0" max="11" step="1" value="0">
         <label for="yearPicker">Select year</label>
-        <select id="yearPicker" name="year">
-            <option value="2018">2018</option>
-            <option value="2019">2019</option>
-            <option value="2020">2020</option>
-            <option value="2021">2021</option>
-        </select>
+        <select id="yearPicker" name="year"></select>
     <div class="map-overlay-inner">
         <div id="legend" class="legend">
             <div class="bar"></div>
             <div>Magnitude (m)</div>
         </div>
     </div>
+    <div class="map-overlay-inner">
+        <span>AutoPlay</span>
+        <!-- <input id="autoPlay" type="checkbox"> -->
+        <label class="switch">
+            <input id="autoPlay" type="checkbox">
+            <span class="slider round"></span>
+        </label>
+    </div> 
 </div>
 
 <script async>
     state = {
-        year: 2018,
+        year: 2011,
         month: 1,
+        autoPlay: false
     }
+
+    const years = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020]
+
     // Get elements for further use
     var yearPicker = document.getElementById('yearPicker');
     var yearText = document.getElementById('yearText');
     var monthSlider = document.getElementById('slider');
-    yearText.innerHTML = state.year;
+    var monthText = document.getElementById('monthText')
+    var autoPlay = document.getElementById('autoPlay')
+    years.forEach(year => {
+        yearPicker.add(new Option(year.toString(), year))
+    })
+    yearText.innerHTML = years[0];  
+    monthText.innerHTML = state.month;
 
     // Initialize Mapbox
 	mapboxgl.accessToken = 'pk.eyJ1Ijoic3BvdHlwb3AiLCJhIjoiY2t1NGJ2aWVpMmNyYzJ1cWhnZGJiNTZlMiJ9.a8RvX6RSf20ddTCPnKJWLw';
@@ -95,10 +171,10 @@ body { margin: 0; padding: 0; }
     });
     map.on('load', configMapBox)
     // Add a callback function to handle input on slider
-    monthSlider.addEventListener('input', handleSliderInput)
+    monthSlider.addEventListener('change', handleSliderInput)
     // Add a callback function to handle input on years dropdown menu
-    yearPicker.addEventListener('input', handleYearDropDownInput)
-
+    yearPicker.addEventListener('change', handleYearDropDownInput)
+    autoPlay.addEventListener('change', handleAutoPlayInput)
     // Handles slider inputs
     async function handleSliderInput(e) {
         var month = parseInt(e.target.value, 10) + 1;
@@ -113,6 +189,10 @@ body { margin: 0; padding: 0; }
         updateEarthQuakes();
     }
 
+    async function handleAutoPlayInput(e) {
+        state.autoPlay = e.target.checked
+    }
+
     // Makes ajax request to API to get earthquake data
     async function fetchData() {
         let response = await fetch(`api/earthquake?year=${state.year}&month=${state.month}`)
@@ -122,10 +202,28 @@ body { margin: 0; padding: 0; }
 
     // Initialize rerender of earthquakes
     async function updateEarthQuakes() {
-        yearText = state.year;
+        yearText.innerHTML = state.year;
+        monthText.innerHTML = state.month;
         earthquakes = await fetchData();
         map.getSource("earthquakes").setData(earthquakes);
     }
+
+    async function incrementMonth() {
+        if (state.autoPlay === false) return;
+        if (monthSlider.value == 11) {
+            if (yearPicker.value == years[years.length - 1]) {
+                yearPicker.value = years[0]
+            } else {
+                yearPicker.value++;
+            }
+            state.year = yearPicker.value 
+            monthSlider.value = 0 
+        } else {
+            monthSlider.value++
+        }
+        monthSlider.dispatchEvent(new Event('change'));
+    }
+    setInterval( incrementMonth, 5000);
 
     // Config MapBox library
     async function configMapBox() {
