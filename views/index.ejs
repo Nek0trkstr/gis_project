@@ -155,6 +155,7 @@ body { margin: 0; padding: 0; }
     var monthSlider = document.getElementById('slider');
     var monthText = document.getElementById('monthText')
     var autoPlay = document.getElementById('autoPlay')
+    // Dynamically set menu options
     years.forEach(year => {
         yearPicker.add(new Option(year.toString(), year))
     })
@@ -170,11 +171,14 @@ body { margin: 0; padding: 0; }
         zoom: 3
     });
     map.on('load', configMapBox)
+
     // Add a callback function to handle input on slider
     monthSlider.addEventListener('change', handleSliderInput)
     // Add a callback function to handle input on years dropdown menu
     yearPicker.addEventListener('change', handleYearDropDownInput)
+    // Add a callback function to handle input on years dropdown menu 
     autoPlay.addEventListener('change', handleAutoPlayInput)
+
     // Handles slider inputs
     async function handleSliderInput(e) {
         var month = parseInt(e.target.value, 10) + 1;
@@ -189,6 +193,7 @@ body { margin: 0; padding: 0; }
         updateEarthQuakes();
     }
 
+    // Handle auto play switch input
     async function handleAutoPlayInput(e) {
         state.autoPlay = e.target.checked
     }
@@ -208,6 +213,7 @@ body { margin: 0; padding: 0; }
         map.getSource("earthquakes").setData(earthquakes);
     }
 
+    // Logic that selects next available month
     async function incrementMonth() {
         if (state.autoPlay === false) return;
         if (monthSlider.value == 11) {
