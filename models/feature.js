@@ -11,7 +11,7 @@ var featureSchema = new mongoose.Schema({
       "type": "String"
     },
     "time": {
-      "type": "Date"
+      "type": "Number"
     },
     "updated": {
       "type": "Number"
